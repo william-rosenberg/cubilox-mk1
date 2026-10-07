@@ -1,0 +1,48 @@
+\chapter{Licenses and Third-Party Software}
+\label[appendix]{app:licenses}
+
+\section{Licenses of this project}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Licenses of the parts of this project (copyright 2026 William Rosenberg).}
+  \label{tab:licenses}
+  \begin{tabular}{lll}
+    \toprule
+    Part & Folder & License \\
+    \midrule
+    Firmware and source code & \cmd{firmware/} & MIT \\
+    Schematic and wiring & \cmd{hardware/} & CERN-OHL-P-2.0 \\
+    Documentation & \cmd{docs/} & CC BY 4.0 \\
+    Photos and animations & \cmd{media/} & CC BY 4.0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Third-party software}
+
+The firmware was written entirely by the author; no third-party source code is contained in the
+repository. The following libraries are required to build it:
+
+\begin{table}[htbp]
+  \centering
+  \caption{Third-party software used by the firmware.}
+  \label{tab:third_party}
+  \begin{tabularx}{\textwidth}{lXl}
+    \toprule
+    Component & Purpose & License \\
+    \midrule
+    MPU6050\_light 1.2.1~\cite{mpu6050light} & reading the IMU & MIT \\
+    Arduino core for the ESP32 3.3.10~\cite{arduino_esp32} & Arduino API, I\textsuperscript{2}C,
+      PWM, ADC & LGPL-2.1 \\
+    \cmd{BluetoothSerial} (part of the core) & Bluetooth command interface & Apache-2.0 \\
+    \cmd{Preferences} (part of the core) & storage in flash & Apache-2.0 \\
+    ESP-IDF (basis of the core) & system software, Bluetooth stack & Apache-2.0 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+MIT and Apache-2.0 are permissive and compatible with the MIT license of the firmware. The
+LGPL-2.1 of the ESP32 core applies to compiled binaries that contain the core; since the complete
+source code of the firmware is published, recipients of a binary can rebuild it with a modified
+core. Further details are given in the file \cmd{NOTICE.md}.

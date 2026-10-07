@@ -1,0 +1,123 @@
+\chapter{Getting Started}
+\label{ch:getting_started}
+
+This chapter describes how to flash the firmware, start the cube for the first time and calibrate
+it.
+
+\section{Software requirements}
+
+\begin{itemize}
+  \item Arduino IDE~2,
+  \item Arduino core for the ESP32~\cite{arduino_esp32}, version 3.x (tested with 3.3.10;
+        installed through the Boards Manager),
+  \item library MPU6050\_light~\cite{mpu6050light} (tested with 1.2.1; installed through the
+        Library Manager).
+\end{itemize}
+The libraries \cmd{BluetoothSerial}, \cmd{Preferences} and \cmd{Wire} are part of the ESP32 core.
+
+\section{Flashing the firmware}
+
+\begin{enumerate}
+  \item Open \cmd{firmware/cubilox\_mk1/cubilox\_mk1.ino} in the Arduino IDE. The folder name must
+        match the name of the main file, so do not rename it.
+  \item Select the board \enquote{ESP32 Dev Module} and the default partition scheme (Bluetooth
+        needs the default scheme; the firmware uses about \SI{85}{\percent} of the program memory).
+  \item Connect the ESP32 via USB and upload the sketch.
+\end{enumerate}
+With the Arduino command line tool, the equivalent command is
+\begin{lstlisting}[language=bash, numbers=none]
+arduino-cli compile --fqbn esp32:esp32:esp32 firmware/cubilox_mk1
+arduino-cli upload  --fqbn esp32:esp32:esp32 -p <port> firmware/cubilox_mk1
+\end{lstlisting}
+
+\section{Connecting}
+
+Commands can be sent in two ways:
+\begin{itemize}
+  \item \textbf{USB:} serial monitor of the Arduino IDE, \SI{115200}{baud}, line ending
+        \enquote{newline}. The USB cable disturbs the balance, so this is mainly useful on the
+        desk.
+  \item \textbf{Bluetooth:} pair the device \cmd{Cubilox\_Mk1} and use a serial terminal app, for
+        example \enquote{Serial Bluetooth Terminal} on Android. The ESP32 uses Bluetooth Classic
+        (serial port profile), which iPhones do not support.
+\end{itemize}
+
+\section{First start}
+
+\begin{enumerate}
+  \item Charge the battery fully and connect it.
+  \item Lay the cube on any side and do not touch it. After a short beep it calibrates the
+        gyroscope (about \SI{3}{s}), then two beeps follow, and a long beep signals that it is ready.
+  \item Connect via Bluetooth and send \cmd{status}. On the first start, it reports that the edge
+        and the vertex are not calibrated.
+  \item Optional: run \cmd{motortest} while holding the cube loosely in your hand. All three
+        encoder values should be similar (about 380 on the original cube) and the recommended
+        signs should match \cmd{config.h}.
+  \item \textbf{Calibrate the edge:} send \cmd{edge}. Within \SI{7}{s}, balance the cube by hand on
+        an edge that is parallel to the axis of motor X, as still as possible. A long beep starts
+        the measurement; hold the cube still for \SI{3}{s}. Two beeps confirm the calibration.
+  \item \textbf{Calibrate the vertex:} send \cmd{vertex} and do the same on the vertex. Find the
+        point where the cube balances by itself with almost no force from your fingers.
+  \item Place the cube on the edge or vertex and hold it gently near the balance point. When it
+        detects the pose, it starts by itself (two short beeps).
+\end{enumerate}
+The calibration is stored permanently. It only has to be repeated if something changes the
+centre of mass, for example if the battery is mounted in a different position. If the vertex
+balance is restless or the cube drifts away in one direction, a new \cmd{vertex} calibration
+usually helps; several attempts may be needed to find the best balance point.
+
+\section{Beep signals}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Beep signals of the buzzer.}
+  \label{tab:beeps}
+  \begin{tabularx}{\textwidth}{lX}
+    \toprule
+    Signal & Meaning \\
+    \midrule
+    1 short beep at power-on & IMU found, gyroscope calibration follows \\
+    2 beeps, then 1 long beep & gyroscope calibrated, cube ready \\
+    2 short beeps & balancing started \\
+    1 beep (\SI{200}{ms}) & balancing stopped \\
+    1 beep, then ticks every second & calibration: balance the cube now \\
+    1 long beep (\SI{150}{ms}) during calibration & measurement starts, hold still \\
+    2 beeps after calibration & calibration saved \\
+    1 very long beep (\SI{800}{ms}) & calibration rejected \\
+    3 short beeps (every \SI{30}{s}) & battery low (below \SI{11.1}{V}) \\
+    1 beep every \SI{2}{s} when placed on a pose & battery empty (below \SI{10.5}{V}), no start \\
+    1-second beep every \SI{2}{s} after power-on & IMU not found \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Commands}
+\label{sec:commands}
+
+\begin{table}[H]
+  \centering
+  \caption{Commands (USB or Bluetooth, one command per line).}
+  \label{tab:commands}
+  \begin{tabularx}{\textwidth}{lX}
+    \toprule
+    Command & Function \\
+    \midrule
+    \cmd{help} or \cmd{?} & list of commands \\
+    \cmd{status} or \cmd{p} & current gains, calibration status, battery voltage, debug mode \\
+    \cmd{edge} & calibrate the edge balance point (\cref{sec:calibration}) \\
+    \cmd{vertex} & calibrate the vertex balance point \\
+    \cmd{<gain> <value>} & set a gain, e.g.\ \cmd{vk1 95} (see \cref{ch:tuning}) \\
+    \cmd{<gain>} & show a gain \\
+    \cmd{save} & store all gains in flash \\
+    \cmd{reset} & delete the stored gains and use the defaults from \cmd{config.h} \\
+    \cmd{debug 0} / \cmd{debug 1} & detailed log output off / on \\
+    \cmd{motortest} & short pulse on each motor; shows gyroscope reaction, encoder counts and the
+      recommended motor and encoder signs \\
+    \cmd{vbatcal <V>} & optional: fine-tune the battery measurement to a multimeter reading, e.g.\
+      \cmd{vbatcal 12.6} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+Commands that write to flash or move the motors (\cmd{edge}, \cmd{vertex}, \cmd{save},
+\cmd{reset}, \cmd{motortest}, \cmd{vbatcal}) are only accepted while the cube is not balancing.
+Changed gains are lost at the next restart unless they are stored with \cmd{save}.

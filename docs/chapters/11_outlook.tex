@@ -1,0 +1,22 @@
+\chapter{Outlook: Cubilox Mk2}
+\label{ch:outlook}
+
+The experience from the Mk1 leads to the following plans for a Mk2:
+
+\begin{itemize}
+  \item \textbf{A real printed circuit board} with proper connectors instead of the prototype board
+        and soldered jumper wires. This saves space and weight and makes the wiring more reliable.
+  \item \textbf{Stronger motors.} More torque would allow calmer balancing with more reserve and
+        could make it possible for the cube to jump up from a resting position, like the
+        Cubli~\cite{gajamohan2012cubli}.
+  \item \textbf{An RGB status LED.} Start-up, calibration and state changes would be shown by light;
+        the buzzer would only be used for important events such as errors or an empty battery.
+\end{itemize}
+
+Further possible improvements that follow from the limitations in \cref{ch:limitations}:
+\begin{itemize}
+  \item \textbf{Safe battery connection} with insulated contacts.
+  \item \textbf{Model-based control.} With an identified model of the cube, the gains could be
+        computed (for example with a linear-quadratic regulator) instead of being tuned only by
+        experiment.
+\end{itemize}

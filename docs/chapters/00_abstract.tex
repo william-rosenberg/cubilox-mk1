@@ -1,0 +1,21 @@
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+
+The Cubilox Mk1 is a self-balancing cube that can stand on one of its edges or on one of its
+corners (vertices). Three reaction wheels, each driven by a brushless Nidec~24H motor, are mounted
+inside a 3D-printed frame. By accelerating and decelerating these wheels, the cube produces
+reaction torques that keep its centre of mass above the edge or the corner it is standing on.
+An ESP32 microcontroller estimates the orientation of the cube from an inertial measurement unit
+(IMU) and runs two controllers: a single-axis controller for the edge and a three-dimensional
+controller for the vertex, which separates the tilt motion from the rotation about the vertical
+axis.
+
+The project was designed and built entirely by the author: the mechanical parts were designed in
+Fusion~360 and printed in PLA, the electronics were soldered on a prototype board, and the firmware
+was written from scratch. It was inspired by the Cubli of ETH Zurich~\cite{gajamohan2012cubli,
+gajamohan2013cubli} and, more directly, by the self-balancing cube of remrc~\cite{remrc_cube}.
+
+This document describes the working principle, the mechanical and electrical design, the firmware
+and its control laws, how to build, flash, calibrate and tune the cube, the results that were
+achieved, and the lessons learned during development. The final version balances on its edge and,
+after a calibration by hand, on its vertex for several minutes.

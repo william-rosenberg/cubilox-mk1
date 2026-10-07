@@ -1,0 +1,301 @@
+\chapter{Firmware and Control}
+\label{ch:firmware}
+
+The firmware is written in C++ for the Arduino core for the ESP32~\cite{arduino_esp32} and uses
+the MPU6050\_light library~\cite{mpu6050light} to read the IMU. This chapter explains its structure
+and the control laws. The firmware is located in the folder \cmd{firmware/cubilox\_mk1/}.
+
+\section{Source files}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Source files of the firmware.}
+  \label{tab:files}
+  \begin{tabularx}{\textwidth}{lX}
+    \toprule
+    File & Content \\
+    \midrule
+    \cmd{cubilox\_mk1.ino} & \cmd{setup()} and \cmd{loop()}: start-up, sensor filters, state
+      machine, edge and vertex controllers \\
+    \cmd{config.h} & pin definitions, controller gains, limits and timing constants, shared state
+      variables \\
+    \cmd{calibration.ino} & gyroscope calibration at start-up, edge and vertex calibration,
+      storage in flash, pose detection \\
+    \cmd{commands.ino} & command interface over USB and Bluetooth, storage of the gains \\
+    \cmd{hardware.ino} & log output, battery measurement, buzzer, motor control, encoder
+      interrupts, motor test \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The Arduino IDE combines all \cmd{.ino} files of the sketch folder into one program; global
+variables shared between the files are therefore declared in \cmd{config.h}.
+
+\section{Start-up}
+
+\cmd{setup()} performs the following steps:
+\begin{enumerate}
+  \item start the USB serial port (\SI{115200}{baud}) and Bluetooth with the device name
+        \cmd{Cubilox\_Mk1},
+  \item load the gains and the calibration from flash,
+  \item configure the pins, attach the PWM outputs (\SI{20}{kHz}, 8~bit) and the encoder
+        interrupts, stop all motors and engage the brake,
+  \item initialise the IMU (gyroscope range \SI{\pm 500}{\degree/s}, accelerometer range
+        \SI{\pm 2}{g}, the defaults of the library),
+  \item calibrate the gyroscope (the cube must lie still, see \cref{sec:calibration}),
+  \item measure the battery voltage and report the calibration status.
+\end{enumerate}
+After that, the cube waits until it is placed on a calibrated edge or vertex and starts balancing
+automatically.
+
+\section{Main loop and timing}
+
+\cmd{loop()} runs continuously. In every pass it processes incoming commands, reads the IMU and
+updates the sensor filters. The controllers themselves run whenever at least \SI{5}{ms} have
+passed since the last control step, i.e.\ at up to \SI{200}{Hz}. The debug output reports the
+longest gap between two control steps (\cmd{loop=}); on the real cube it is \SIrange{5}{6}{ms}.
+
+The wheel speeds are computed from the encoder counts in a window of \SI{20}{ms} and scaled by 5,
+so that their unit is \enquote{encoder counts per \SI{100}{ms}}. All wheel speeds and wheel
+momenta in this chapter use this unit.
+
+\section{State machine}
+\label{sec:state_machine}
+
+The firmware has three states:
+\begin{description}
+  \item[WAITING] The motors are off and braked. The firmware compares the measured acceleration
+    vector with the calibrated edge and vertex poses. If it is closer than \SI{0.25}{g} to one of
+    them, the cube is close enough to the balance point (edge: $|\theta| < \ang{1}$, vertex:
+    tilt $< \ang{1.5}$), it is at rest ($\left||\vect{a}| - \SI{1}{g}\right| < \SI{0.3}{g}$), the
+    battery is not empty and these conditions hold for \SI{400}{ms}, the brake is released and the
+    corresponding balancing state is entered.
+  \item[RUNNING\_EDGE] The edge controller drives motor X. The motor command is ramped up over
+    \SI{800}{ms}. Balancing stops if the angle exceeds \ang{15} or the cube is moved
+    ($\left||\vect{a}| - \SI{1}{g}\right| > \SI{0.3}{g}$).
+  \item[RUNNING\_VERTEX] The vertex controller drives all three motors. The command is ramped up
+    over \SI{150}{ms}. Balancing stops if the tilt exceeds \ang{25}, if a shock
+    ($\left||\vect{a}| - \SI{1}{g}\right| > \SI{1.2}{g}$) lasts longer than \SI{150}{ms}, or if at
+    least one motor command stays above the maximum of 255 for more than \SI{200}{ms}
+    (saturation).
+\end{description}
+When balancing stops, all motors are switched off and braked, the run time and the cause are
+reported, and the state returns to WAITING.
+
+\section{Sensor processing}
+\label{sec:sensor_processing}
+
+\subsection{Edge angle}
+
+On the edge, only the rotation about the sensor's X axis matters. The firmware uses the X tilt
+angle $\varphi_x$ computed by the MPU6050\_light library, subtracts the calibrated offset
+$\varphi_0$ and combines it with the gyroscope rate $\omega_x$ in a complementary filter:
+\begin{equation}
+  \theta_k = 0.98\left(\theta_{k-1} + \omega_x\,\Delta t\right) + 0.02\left(\varphi_x - \varphi_0\right).
+  \label{eq:edge_cf}
+\end{equation}
+Here $\Delta t$ is the time since the last control step, not since the last filter step. The edge
+gains were tuned with this behaviour, so it was deliberately left unchanged.
+
+\subsection{Vertex tilt vector}
+
+On the vertex, the tilt is a three-dimensional vector. The current gravity direction $\vect{n}$ is
+the normalised accelerometer vector, $\vect{r}$ the normalised calibrated vertex pose. The
+accelerometer-based tilt error (in degrees) is
+\begin{equation}
+  \vect{e}_\text{acc} = \frac{180}{\pi}\,\left(\vect{n}\times\vect{r}\right).
+\end{equation}
+The order of the cross product matters: $\vect{n}\times\vect{r}$ has the same sign as the
+integrated gyroscope rate (with the MPU6050\_light conventions, a positive rotation about X
+increases the measured Y acceleration). The opposite order was the main bug during development
+(\cref{sec:history}).
+
+The tilt estimate $\vect{e}$ is obtained with a complementary filter with the time constant
+$\tau = \SI{0.5}{s}$:
+\begin{equation}
+  \vect{e}_k = a\left(\vect{e}_{k-1} + \vect{\omega}\,\Delta t\right) + (1-a)\,\vect{e}_\text{acc},
+  \qquad a = \frac{\tau}{\tau + \Delta t},
+  \label{eq:vertex_cf}
+\end{equation}
+where $\vect{\omega}$ is the gyroscope rate vector and $\Delta t$ the measured time since the last
+filter step. The long time constant suppresses the disturbances of the accelerometer caused by the
+wheel accelerations. After every filter step, the component of $\vect{e}$ along $\vect{r}$ is
+removed, because a rotation about the vertical axis is not a tilt and is never corrected by the
+accelerometer.
+
+\section{Edge controller}
+\label{sec:edge_controller}
+
+The edge controller implements \cref{eq:edge_law} for motor X:
+\begin{equation}
+  u_X = \rho(t)\,\Bigl(k_{e1}\,(\theta - \theta_\text{trim}) + k_{e2}\,\omega_x + k_{e3}\,n_X\Bigr),
+  \label{eq:edge_controller}
+\end{equation}
+with the gains $k_{e1}$, $k_{e2}$, $k_{e3}$ (\cmd{ek1}, \cmd{ek2}, \cmd{ek3}), the wheel speed
+$n_X$ of motor X and the start-up ramp $\rho(t)$ that rises linearly from 0 to 1. The command
+$u_X$ is limited to $\pm 255$.
+
+\begin{lstlisting}[caption={Edge controller in \cmd{cubilox\_mk1.ino}.}, label={lst:edge}]
+float output = (eK1 * edgeAngle + eK2 * gyroRateX + eK3 * motorSpeed_X) * rampFactor;
+motorControl_X((int)output);
+\end{lstlisting}
+
+\subsection{Automatic trim}
+\label{sec:trim}
+
+If the calibrated balance point is slightly off, the wheel keeps turning in one direction
+(\cref{sec:wheel_speed}). According to \cref{eq:equilibrium}, a positive wheel speed means that the
+angle setpoint is too large. The trim therefore moves the setpoint slowly against the wheel speed:
+\begin{equation}
+  \theta_\text{trim} \leftarrow \theta_\text{trim} - k_\text{trim}\, n_X\, \Delta t ,
+\end{equation}
+limited to \SI{\pm 3}{\degree}, with the rate $k_\text{trim}$ (\cmd{trim}, default 0.001). The trim
+is only active after the start-up ramp and is kept after a fall. On the real cube, the wheel
+oscillates around zero and the trim stays within about \SI{\pm 0.1}{\degree}.
+
+\section{Vertex controller}
+\label{sec:vertex_controller}
+
+The vertex controller works in the coordinate frame of the cube. The motors Y and Z are mounted
+mirrored, which is described by the motor signs $s = (+1, -1, -1)$ and the encoder signs
+$w = (+1, +1, +1)$ in \cmd{config.h}. The physical wheel momentum vector is
+\begin{equation}
+  \vect{h} = \bigl(s_X w_X n_X,\; s_Y w_Y n_Y,\; s_Z w_Z n_Z\bigr).
+\end{equation}
+Both the gyroscope rate $\vect{\omega}$ and the wheel momentum $\vect{h}$ are split into a tilt part
+and a yaw part according to \cref{eq:split}. The torque command vector is
+\begin{equation}
+  \vect{t} = k_{v1}\,(\vect{e} - \vect{e}_\text{trim}) + k_{v2}\,\vect{\omega}_\text{tilt}
+           + k_{v3}\,\vect{h}_\text{tilt}
+           + \bigl(k_{yd}\,\omega_\text{yaw} - k_{yw}\,h_\text{yaw}\bigr)\,\vect{r},
+  \label{eq:vertex_controller}
+\end{equation}
+where $\omega_\text{yaw} = \vect{\omega}\cdot\vect{r}$ and $h_\text{yaw} = \vect{h}\cdot\vect{r}$.
+The gains are \cmd{vk1}, \cmd{vk2}, \cmd{vk3} for the tilt and \cmd{vyd}, \cmd{vyw} for the yaw
+axis. The three motor commands are
+\begin{equation}
+  u_i = \rho(t)\, s_i\, t_i ,\qquad i \in \{X, Y, Z\}.
+\end{equation}
+The first three terms of \cref{eq:vertex_controller} are the three-dimensional version of the edge
+controller. The yaw term damps the rotation about the vertical axis and slowly removes the yaw
+momentum of the wheels; $k_{yw}$ must be positive, otherwise it is a positive feedback
+(\cref{sec:yaw_physics}).
+
+\begin{lstlisting}[caption={Core of the vertex controller in \cmd{cubilox\_mk1.ino}.},
+  label={lst:vertex}]
+float yawTorque = vYawD * gYaw - vYawW * hYaw;
+float tX = vK1 * (cfVertexAngleX - vTrimX) + vK2 * gTx + vK3 * hTx + yawTorque * rx;
+float tY = vK1 * (cfVertexAngleY - vTrimY) + vK2 * gTy + vK3 * hTy + yawTorque * ry;
+float tZ = vK1 * (cfVertexAngleZ - vTrimZ) + vK2 * gTz + vK3 * hTz + yawTorque * rz;
+
+float outX = MOTOR_SIGN_X * tX * rampFactor;
+float outY = MOTOR_SIGN_Y * tY * rampFactor;
+float outZ = MOTOR_SIGN_Z * tZ * rampFactor;
+\end{lstlisting}
+
+The vertex has an automatic trim as well, which works like the edge trim but as a vector
+perpendicular to $\vect{r}$:
+$\vect{e}_\text{trim} \leftarrow \vect{e}_\text{trim} - k_\text{vtrim}\,\vect{h}_\text{tilt}\,\Delta t$,
+limited to \ang{3}. Its rate \cmd{vtrim} is 0 (off) by default, because the cube balances best
+with a careful calibration by hand (\cref{sec:history}).
+
+\section{Calibration and persistent storage}
+\label{sec:calibration}
+
+\subsection{Gyroscope}
+
+The gyroscope has a small offset that changes with temperature. It is therefore measured at every
+start: the cube only has to lie still for about three seconds. The surface does not need to be
+level, because only the gyroscope is calibrated.
+
+\subsection{Edge and vertex poses}
+
+The balance points of the edge and the vertex are measured once with the commands \cmd{edge} and
+\cmd{vertex} and stored in flash. The user balances the cube by hand on the edge or vertex;
+after \SI{7}{s} (one short tick per second), the acceleration vector is averaged for \SI{3}{s}.
+The measurement is rejected if
+\begin{itemize}
+  \item the standard deviation of one acceleration component exceeds \SI{0.05}{g} (the cube was
+        moved), or
+  \item the measured direction is more than \ang{12} away from an ideal pose: for the vertex a
+        space diagonal $(\pm 1, \pm 1, \pm 1)/\sqrt{3}$, for the edge a diagonal in the Y--Z plane,
+        i.e.\ an edge parallel to the axis of motor X.
+\end{itemize}
+
+Balancing by hand finds the \emph{real} balance point, where the centre of mass is exactly above
+the pivot. A fixture that holds the cube geometrically straight does not, because the centre of
+mass is generally not exactly in the geometric centre. This difference was the key to stable vertex
+balancing (\cref{sec:history}).
+
+The accelerometer offsets are not recomputed at start-up. The offsets that were active during the
+calibration are stored together with the poses and loaded again at every start, so that the
+stored poses remain valid after every restart and power loss. (A constant accelerometer offset does
+not matter for balancing, because the poses are measured with the same offset.)
+
+\begin{table}[htbp]
+  \centering
+  \caption{Data stored in the flash memory (ESP32 \cmd{Preferences}).}
+  \label{tab:flash}
+  \begin{tabularx}{\textwidth}{llX}
+    \toprule
+    Namespace & Content & Deleted by \\
+    \midrule
+    \cmd{cube}    & controller gains (after \cmd{save}) & \cmd{reset} \\
+    \cmd{cuberef} & edge and vertex poses, accelerometer offsets & new calibration (overwrites) \\
+    \cmd{cubebat} & battery voltage factor (after \cmd{vbatcal}) & new \cmd{vbatcal} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Communication and logging}
+
+Commands can be sent over the USB serial port or over Bluetooth Classic (serial port profile) with
+any serial terminal; they are listed in \cref{sec:commands}. All output goes to both interfaces.
+
+During development, an analysis of the Bluetooth library showed that it sends every print call
+as a separate packet; with a connected client, its transmit queue holds 32 packets and a full
+queue can block the caller for up to one second. Since the diagnostic output consisted of many
+print calls, this could stall the control loop. The firmware therefore formats each log line completely and
+sends it as one packet (\cmd{logLine()}), and it always writes the motor commands \emph{before}
+any log output.
+
+In normal operation, the cube only reports the start and the end of a balancing run (with the run
+time and the cause) and a short status line every \SI{10}{s}. With \cmd{debug 1}, detailed lines
+are printed (\cref{tab:debug}).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Debug output (\cmd{debug 1}).}
+  \label{tab:debug}
+  \begin{tabularx}{\textwidth}{lX}
+    \toprule
+    Line & Fields \\
+    \midrule
+    \cmd{IDLE} (every \SI{500}{ms}) & detected pose, acceleration vector, edge angle, vertex tilt,
+      battery voltage \\
+    \cmd{EDGE} (every \SI{500}{ms}) & time \cmd{t}, \cmd{angle}, wheel speed \cmd{wheel}, \cmd{trim},
+      longest control gap \cmd{loop} \\
+    \cmd{RUN} (every \SI{50}{ms}) & time \cmd{t}, tilt vector \cmd{e}, gyroscope \cmd{g}, wheel
+      speeds \cmd{w}, motor commands \cmd{o}, yaw and tilt momentum, trim vector, \cmd{loop} \\
+    \cmd{STOP} & tilt, acceleration magnitude and number of short shocks at the end of a vertex run \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Where to change what}
+
+Most settings are constants in \cmd{config.h}:
+\begin{itemize}
+  \item \textbf{Pins} (\cmd{PWM\_X}, \cmd{DIR\_X}, \ldots): adapt them if the board is wired
+        differently.
+  \item \textbf{Default gains} (\cmd{eK1}--\cmd{eK3}, \cmd{vK1}--\cmd{vK3}, \cmd{vYawD},
+        \cmd{vYawW}, trim rates): they are used until gains are stored with \cmd{save}.
+  \item \textbf{Motor and encoder signs} (\cmd{MOTOR\_SIGN\_*}, \cmd{WHEEL\_SIGN\_*}): must match
+        the mounting direction of the motors; the command \cmd{motortest} recommends them.
+  \item \textbf{Start and stop limits} (\cmd{EDGE\_START\_ANGLE\_DEG},
+        \cmd{VERTEX\_STOP\_ANGLE\_DEG}, ramp times, \cmd{SATURATION\_STOP\_MS}, \ldots).
+  \item \textbf{Calibration timing} (\cmd{CALIB\_SETTLE\_MS} = \SI{7}{s},
+        \cmd{CALIB\_AVERAGE\_MS} = \SI{3}{s}) and its plausibility limits.
+  \item \textbf{Battery} (\cmd{VBAT\_FACTOR}, \cmd{BAT\_WARN\_V}, \cmd{BAT\_MIN\_V}).
+  \item \textbf{Bluetooth name} (\cmd{BT\_DEVICE\_NAME}).
+\end{itemize}

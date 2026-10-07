@@ -1,0 +1,77 @@
+\chapter{Introduction and Inspiration}
+\label{ch:introduction}
+
+\section{Motivation}
+
+The Cubilox Mk1 is the author's first large electronics project. Before it, only small Arduino
+projects had been built. The idea for the cube goes back several years, to a video of the
+\emph{Cubli}, a cube developed at the Institute for Dynamic Systems and Control of ETH Zurich that
+can jump up and balance on its corner~\cite{gajamohan2012cubli,gajamohan2013cubli}. The goal was
+to build a similar cube completely independently, and to learn the required electronics, control
+engineering and mechanical design along the way.
+
+While researching what such a cube needs, the author came across the self-balancing cube of
+remrc~\cite{remrc_cube}. This project had a strong influence on the Cubilox Mk1: it uses the
+same type of motor (Nidec~24H) and a similar general layout. Nevertheless, every part of the
+Cubilox Mk1 was created by the author: all mechanical parts were designed from scratch, the
+circuit was designed and soldered independently, and the firmware was written without using code
+from other cube projects.
+
+Because it is a first project of this size, not every solution is best practice, and some
+decisions would be made differently today. These points are discussed openly in
+\cref{ch:limitations,ch:outlook}. The cube works, and the knowledge gained here is the basis for
+future projects.
+
+\section{Scientific background: the Cubli}
+
+The Cubli is a \SI{15}{cm} cube with reaction wheels mounted on three of its faces. By applying
+controlled torques to the wheels, it balances on an edge or a corner; by spinning the wheels up and
+braking them abruptly, it can even jump up from a resting position~\cite{gajamohan2012cubli}. In
+the second publication, the multi-body dynamics of the Cubli are derived, its parameters are
+identified, and corner balancing with a linear state feedback controller is demonstrated
+experimentally~\cite{gajamohan2013cubli}. The Cubli can therefore be seen as a three-dimensional
+version of the classical inverted pendulum, actuated purely by internal reaction wheels.
+
+\section{Goals and scope of the Cubilox Mk1}
+
+The goals of the project were:
+\begin{itemize}
+  \item a cube that balances on an edge using one reaction wheel,
+  \item a cube that balances on a vertex using all three reaction wheels,
+  \item a design that can be printed on a standard consumer 3D printer and built from easily
+        available parts,
+  \item self-written firmware that can be tuned and calibrated wirelessly over Bluetooth.
+\end{itemize}
+Jumping up from a resting position, as the Cubli does, was not a goal of the Mk1 (see
+\cref{ch:outlook}).
+
+\Cref{fig:render,fig:vertex_photo} show the CAD model and the finished cube balancing on its
+vertex.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{cubilox_mk1_render.png}
+    \caption{Rendering of the CAD model.}
+    \label{fig:render}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.40\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{vertex_balance.jpg}
+    \caption{The finished cube balancing on its vertex.}
+    \label{fig:vertex_photo}
+  \end{subfigure}
+  \caption{The Cubilox Mk1: CAD model and built prototype.}
+  \label{fig:overview}
+\end{figure}
+
+\section{Structure of this document}
+
+\Cref{ch:principle} explains the physics of reaction wheel balancing.
+\Cref{ch:mechanical,ch:electronics} describe the mechanical design and the electronics.
+\Cref{ch:firmware} explains the firmware and the control laws in detail, followed by a getting
+started guide (\cref{ch:getting_started}) and a tuning guide (\cref{ch:tuning}).
+\Cref{ch:assembly} gives assembly instructions. \Cref{ch:results} presents the results and the
+development history, \cref{ch:limitations} the limitations, and \cref{ch:outlook} the ideas for a
+Mk2. The bill of materials and the third-party software are listed in the appendix.

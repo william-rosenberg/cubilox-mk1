@@ -1,0 +1,33 @@
+Category,Item,Quantity,Specification,Notes
+Electronics,ESP32 development board,1,"HW-394, ESP32-32D module, 30 pins, USB-C",Main microcontroller
+Electronics,IMU breakout board,1,"MPU-6500 (board labelled MPU-9250/6500/9255)",Accelerometer and gyroscope; driven with the MPU6050_light library
+Electronics,Brushless motor Nidec 24H,3,8-pin connector version,"Integrated driver and encoder; the 12-pin version does not fit this design"
+Electronics,LiPo battery,1,"3S, 11.1 V, 1000 mAh, approx. 63 x 30 x 24 mm, approx. 80 g",
+Electronics,XT30 connector,1,,Battery connector
+Electronics,DC-DC buck converter (mini),1,"Input 5-30 V, output 5 V",Supplies the ESP32 and the motor logic
+Electronics,Prototype PCB,1,60 x 80 mm,
+Electronics,Electrolytic capacitor,1,1000 uF,Bulk capacitor at the battery input
+Electronics,Electrolytic capacitor,3,100 uF,One per motor supply
+Electronics,Ceramic capacitor,1,100 nF,Filter capacitor at the battery voltage divider (GPIO39)
+Electronics,Resistor,1,33 kOhm,Upper resistor of the battery voltage divider (built as 20 k + 10 k + 3.3 k in series)
+Electronics,Resistor,1,10 kOhm,Lower resistor of the battery voltage divider
+Electronics,Resistor,1,1 kOhm,Base resistor of the buzzer transistor
+Electronics,NPN transistor 2N2222,1,,Low-side switch for the buzzer
+Electronics,Active buzzer,1,5 V,
+Electronics,Pin headers,as required,2.54 mm,"3 x 8-pin (motors), 1 x 4-pin (IMU), battery connector"
+Electronics,Jumper wires,as required,2.54 mm female,Motor cable extensions
+Electronics,Heat shrink tubing,as required,,Insulation of the soldered cable extensions
+Hardware,M6 nut,36,,Additional rim mass of the reaction wheels
+Hardware,M6 x 10 mm screw,18,,Additional rim mass of the reaction wheels
+Hardware,M4 nut,6,,Motor mounts
+Hardware,M4 x 10 mm screw,6,,Motor mounts
+Hardware,M3 nut,53,,General assembly (frame and mounts)
+Hardware,M3 x 10 mm screw,53,,General assembly (frame and mounts)
+3D printed,motor_mount,6,PLA,
+3D printed,flywheel,3,PLA,
+3D printed,motor_wall,3,PLA,
+3D printed,side_wall,3,PLA,
+3D printed,corner_mount,8,PLA,
+3D printed,sensor_mount,1,PLA,
+3D printed,electronic_base_plate,1,PLA,
+3D printed,intermediate_plate,1,PLA,Encloses the battery and carries the circuit board

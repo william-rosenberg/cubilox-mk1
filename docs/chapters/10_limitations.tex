@@ -1,0 +1,32 @@
+\chapter{Limitations}
+\label{ch:limitations}
+
+The Cubilox Mk1 is the author's first large electronics project. It works, but several aspects
+are not best practice or limit its performance:
+
+\begin{itemize}
+  \item \textbf{Motor power.} The available torque of the Nidec~24H motors is the main limit. Runs
+        end when the motors saturate, a small residual oscillation remains on the vertex, and the
+        cube cannot jump up by itself.
+  \item \textbf{Empirical gains.} The gains were tuned by experiment. No model of the cube was
+        identified, and no model-based controller (such as the linear state feedback of the
+        Cubli~\cite{gajamohan2013cubli}) was designed.
+  \item \textbf{Calibration by hand.} The vertex balance point has to be found by balancing the cube
+        by hand; the result depends on the user and may need several attempts. The automatic
+        vertex trim did not replace this calibration.
+  \item \textbf{Edge balancing on one axis.} Only edges parallel to the axis of motor X are
+        supported.
+  \item \textbf{Sensor disturbances.} The accelerometer is disturbed by every wheel acceleration;
+        the vertex filter therefore relies on the gyroscope for fast motion and corrects the tilt
+        only slowly.
+  \item \textbf{Prototype board.} All electronics are hand-wired on a prototype board. The wiring
+        takes space, adds weight and is error-prone (one loose contact was found during
+        development).
+  \item \textbf{Exposed battery contacts.} The XT30 connector is attached via uninsulated pin
+        headers, which is a short-circuit risk.
+  \item \textbf{Schematic.} The schematic was the author's first KiCad project and is not as clearly
+        laid out as it could be; two labels differ from the built cube
+        (\cref{ch:electronics}).
+  \item \textbf{Acoustic feedback only.} All status information is given by the buzzer, which became
+        a lot of beeping during testing.
+\end{itemize}

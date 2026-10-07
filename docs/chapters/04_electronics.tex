@@ -1,0 +1,241 @@
+\chapter{Electronics}
+\label{ch:electronics}
+
+\section{Overview}
+
+All electronic components are soldered onto a \qtyproduct{60 x 80}{mm} prototype board
+(\cref{fig:pcb}). The main components are:
+\begin{itemize}
+  \item an \textbf{ESP32 development board} (HW-394, ESP32-32D module, USB-C) as the
+        microcontroller,
+  \item an \textbf{IMU breakout board} labelled \enquote{MPU-9250/6500/9255} (MPU-6500 family,
+        three-axis accelerometer and gyroscope), connected via I\textsuperscript{2}C and read with
+        the MPU6050\_light library~\cite{mpu6050light}, whose register accesses are compatible
+        with this sensor,
+  \item three \textbf{Nidec~24H brushless motors} with integrated driver and encoder; the
+        \textbf{8-pin version} is required (the author first bought the 12-pin version, which does
+        not fit this design),
+  \item a \textbf{3S LiPo battery} (\SI{11.1}{V} nominal, \SI{12.6}{V} fully charged,
+        \SI{1000}{mAh}) with an XT30 connector,
+  \item a \textbf{mini DC-DC buck converter} (input \SIrange{5}{30}{V}, output \SI{5}{V}),
+  \item an \textbf{active \SI{5}{V} buzzer} switched by a 2N2222 transistor,
+  \item a \textbf{voltage divider} for measuring the battery voltage, and buffer capacitors.
+\end{itemize}
+The board carries three 8-pin headers for the motor cables and a 4-pin header for the IMU.
+The complete schematic is shown in \cref{fig:schematic}; all connections are also listed in the
+file \nolinkurl{hardware/electronics/wiring.md} of the repository.
+
+The schematic was the author's first project in KiCad and is therefore not as clearly arranged as
+it could be. Two details differ from the built cube: the transistor symbol is labelled 2N2219,
+while a 2N2222 is used, and the motors are numbered 1--3 instead of X, Y, Z
+(Nidec24H1~=~motor~X, Nidec24H2~=~motor~Z, Nidec24H3~=~motor~Y).
+
+\begin{landscape}
+\begin{figure}[p]
+  \centering
+  \includegraphics[width=\linewidth,height=0.88\textheight,keepaspectratio]{cubilox_mk1_schematic.pdf}
+  \caption{Complete schematic of the Cubilox Mk1 (KiCad). The transistor Q1 is a 2N2222 in the
+    built cube.}
+  \label{fig:schematic}
+\end{figure}
+\end{landscape}
+
+\section{Power supply}
+
+The battery feeds a common \SI{12}{V} rail, which supplies the three motors directly (red wire,
+VIN) and the buck converter. The buck converter produces \SI{5}{V} for the VIN pin of the ESP32
+board and for the logic supply of the motors (white wire). The ESP32 board generates the
+\SI{3.3}{V} for the IMU with its on-board regulator. All grounds are connected to one common GND
+rail.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Power distribution.}
+  \label{tab:power}
+  \begin{tabularx}{\textwidth}{lX}
+    \toprule
+    Rail & Consumers \\
+    \midrule
+    Battery (\SIrange{11.1}{12.6}{V}) & motor power (VIN) of all three motors, buck converter input,
+                                        voltage divider \\
+    \SI{5}{V} (buck converter)        & ESP32 VIN, motor logic supply, buzzer \\
+    \SI{3.3}{V} (ESP32 board)         & IMU \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\subsection{Buffer capacitors}
+
+The motors draw short, high current peaks whenever they accelerate or reverse, which happens
+continuously while balancing. Because of the resistance and inductance of the battery and the
+wires, these peaks cause short voltage dips on the supply rails. Such dips can disturb or reset
+the ESP32 and the motor drivers. Three types of capacitors reduce this effect:
+\begin{itemize}
+  \item \textbf{C4, \SI{1000}{\micro F} electrolytic}, directly at the battery input: a large
+        reservoir that supplies the current peaks of all motors together and smooths the main
+        rail.
+  \item \textbf{C1--C3, \SI{100}{\micro F} electrolytic}, one at the supply of each motor: local
+        reservoirs close to the consumers, so that the peak current of one motor does not have to
+        flow through the whole wiring and disturb the others.
+  \item \textbf{C5, \SI{100}{nF} ceramic}, at the measuring point of the voltage divider: a small
+        capacitor that filters noise on the ADC input (see \cref{sec:divider}).
+\end{itemize}
+
+\section{Battery voltage measurement}
+\label{sec:divider}
+
+The ESP32's analogue-to-digital converter (ADC) can only measure voltages up to about
+\SI{3.3}{V}, while the battery reaches \SI{12.6}{V}. A voltage divider scales the battery voltage
+down:
+\begin{equation}
+  V_\text{pin} = V_\text{bat}\,\frac{R_3}{R_2 + R_3}
+             = V_\text{bat}\,\frac{\SI{10}{k\ohm}}{\SI{33}{k\ohm} + \SI{10}{k\ohm}}
+             \approx 0.233\,V_\text{bat}.
+\end{equation}
+For a full battery, $V_\text{pin} = \SI{12.6}{V} \times 0.233 \approx \SI{2.93}{V}$, safely below
+the limit. The firmware reverses this calculation by multiplying the measured pin voltage by
+$(R_2+R_3)/R_3 = 4.3$ (\cref{lst:battery}). The upper resistor of \SI{33}{k\ohm} is built from
+three resistors in series (\SI{20}{k\ohm} + \SI{10}{k\ohm} + \SI{3.3}{k\ohm}), because no single
+\SI{33}{k\ohm} resistor was at hand.
+
+The high resistance values keep the current through the divider small,
+$I = \SI{12.6}{V} / \SI{43}{k\ohm} \approx \SI{0.29}{mA}$, so the divider hardly drains the battery.
+Together with the source resistance of the divider,
+$R_2 \parallel R_3 \approx \SI{7.7}{k\ohm}$, the \SI{100}{nF} capacitor C5 forms a low-pass filter
+with a cut-off frequency of
+\begin{equation}
+  f_c = \frac{1}{2\pi\,(R_2\parallel R_3)\,C_5} \approx \SI{207}{Hz},
+\end{equation}
+which suppresses switching noise from the motors and provides the charge that the ADC needs for a
+sample.
+
+\begin{lstlisting}[caption={Battery measurement in \cmd{hardware.ino}: 16 samples are averaged and
+  converted to the battery voltage.}, label={lst:battery}]
+float readBatteryPinV() {
+  uint32_t sum = 0;
+  for (int i = 0; i < 16; i++) sum += analogReadMilliVolts(VBAT_PIN);
+  return sum / 16.0 / 1000.0;
+}
+
+void updateBattery() {
+  float v = readBatteryPinV() * VBAT_FACTOR;      // VBAT_FACTOR = (33 + 10) / 10
+  batteryV = (batteryV <= 0) ? v : 0.8 * batteryV + 0.2 * v;
+}
+\end{lstlisting}
+
+The battery voltage is only measured while the cube is not balancing, because the voltage drops
+under load. Below \SI{11.1}{V} (\SI{3.7}{V} per cell) the cube warns with three beeps, and below
+\SI{10.5}{V} (\SI{3.5}{V} per cell) it refuses to start, to protect the battery. A fully charged
+battery noticeably increases the available motor power.
+
+\section{Buzzer driver}
+
+The active buzzer only needs to be switched on and off. Since an ESP32 pin can only supply a
+small current, the buzzer is switched by an NPN transistor (2N2222) on its low side: GPIO~23 drives
+the base through a \SI{1}{k\ohm} resistor, the emitter is connected to GND and the collector to
+the negative terminal of the buzzer, whose positive terminal is connected to \SI{5}{V}. The base
+current is approximately $(\SI{3.3}{V} - \SI{0.7}{V}) / \SI{1}{k\ohm} \approx \SI{2.6}{mA}$,
+enough to switch the transistor fully on.
+
+\section{Pin assignment}
+
+\Cref{tab:pins} lists the pin assignment as defined in \cmd{config.h}. Strapping pins
+(GPIO 0, 2, 5, 12, 15), the flash pins (GPIO 6--11) and the USB serial pins (GPIO 1, 3) were
+deliberately avoided. GPIO 34, 35, 36 and 39 are input-only pins without internal pull
+resistors; the encoders work on them without external pull-ups.
+
+\begin{table}[htbp]
+  \centering
+  \caption{ESP32 pin assignment.}
+  \label{tab:pins}
+  \begin{tabular}{lcccc}
+    \toprule
+    Signal & Motor X & Motor Y & Motor Z & Other \\
+    \midrule
+    PWM        & 32 & 14 & 25 & \\
+    Direction  & 4  & 13 & 27 & \\
+    Encoder A  & 35 & 36 & 34 & \\
+    Encoder B  & 33 & 19 & 18 & \\
+    Brake (shared)        & \multicolumn{3}{c}{26} & \\
+    I\textsuperscript{2}C SDA / SCL (IMU) & & & & 21 / 22 \\
+    Buzzer                & & & & 23 \\
+    Battery voltage (ADC) & & & & 39 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Motor connection}
+
+The Nidec~24H contains its own driver: it only needs the supply voltages, a PWM signal for the
+speed, a direction signal and a brake signal, and it returns two encoder signals.
+\Cref{tab:motor_pins} shows the 8-pin connector. The colours of the wires can differ between
+suppliers; the pin order is what matters. Two details are important for the firmware:
+\begin{itemize}
+  \item the PWM input is inverted: a duty cycle of 255 (of 255) means \enquote{stop}, so the
+        firmware writes $255 - |u|$,
+  \item the brake input is active low: HIGH lets the motors run freely, LOW brakes them.
+\end{itemize}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Nidec~24H motor connector (identical for all three motors).}
+  \label{tab:motor_pins}
+  \begin{tabular}{clll}
+    \toprule
+    Pin & Colour & Function & Connected to \\
+    \midrule
+    1 & red    & VIN (battery voltage) & \SI{12}{V} rail \\
+    2 & black  & GND                   & GND rail \\
+    3 & yellow & brake                 & GPIO 26 (shared) \\
+    4 & green  & PWM                   & motor-specific GPIO \\
+    5 & blue   & direction             & motor-specific GPIO \\
+    6 & white  & \SI{5}{V} logic supply & buck converter output \\
+    7 & orange & encoder A             & motor-specific GPIO \\
+    8 & brown  & encoder B             & motor-specific GPIO \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Construction of the board}
+
+\Cref{fig:pcb} shows both sides of the prototype board. The wiring on the bottom side is largely
+colour-coded: red for supply voltages, black for GND, blue for the two I\textsuperscript{2}C lines
+of the IMU, yellow for the brake and the buzzer, and green for all encoder and PWM signals.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{pcb_top_view_annotated.jpg}
+    \caption{Top side with the resistor values marked.}
+    \label{fig:pcb_top}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.49\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{pcb_bottom_view_wiring.jpg}
+    \caption{Bottom side with the colour-coded wiring.}
+    \label{fig:pcb_bottom}
+  \end{subfigure}
+  \caption{The prototype board: ESP32 board (right), buck converter (left), buzzer, voltage
+    divider, buffer capacitors and the pin headers for the motors and the IMU.}
+  \label{fig:pcb}
+\end{figure}
+
+The motor cables were extended with ordinary jumper wires with \SI{2.54}{mm} female connectors,
+soldered to the motor wires and insulated with heat shrink tubing (\cref{fig:wiring_extension}).
+This takes some time but is cheap and works well. Alternatives are ready-made extension cables
+or crimping 8-pin cables with a matching connector kit.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.45\textwidth]{soldered_wiring_extension.jpg}
+  \caption{Motor cable extended with jumper wires, insulated with heat shrink tubing.}
+  \label{fig:wiring_extension}
+\end{figure}
+
+\section{Safety note on the battery connection}
+
+The XT30 battery connector is soldered to the board via pin headers. These contacts are not
+insulated. They were useful during testing for measuring the battery voltage with a multimeter,
+but they are dangerous: touching them or accidentally bridging them causes a short circuit of the
+LiPo battery. \textbf{Do not copy this detail}; insulate all battery contacts.

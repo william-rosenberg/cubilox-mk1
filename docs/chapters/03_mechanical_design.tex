@@ -1,0 +1,133 @@
+\chapter{Mechanical Design}
+\label{ch:mechanical}
+
+\section{Overview}
+
+All mechanical parts of the Cubilox Mk1 were designed by the author in Fusion~360 and printed in
+standard PLA on a Bambu Lab A1 printer, using the default settings of the Bambu Studio slicer.
+The frame of the cube consists of three motor walls carrying the motors and reaction wheels, three
+side walls, and eight corner mounts that join the walls with M3 screws and nuts. The electronics
+sit on a base plate inside the cube. \Cref{tab:printed_parts} lists all printed parts and
+\cref{tab:mech_params} the key parameters.
+
+\begin{table}[htbp]
+  \centering
+  \caption{3D-printed parts of the Cubilox Mk1.}
+  \label{tab:printed_parts}
+  \begin{tabular}{lcl}
+    \toprule
+    Part & Quantity & Function \\
+    \midrule
+    \cmd{motor\_wall}            & 3 & frame face carrying one motor and its reaction wheel \\
+    \cmd{side\_wall}             & 3 & frame face without motor \\
+    \cmd{corner\_mount}          & 8 & joins the walls at the corners (M3 nuts press-fit) \\
+    \cmd{motor\_mount}           & 6 & holds a motor (fixed with M4 screws) \\
+    \cmd{flywheel}               & 3 & reaction wheel \\
+    \cmd{sensor\_mount}          & 1 & holds the IMU near the centre of the cube \\
+    \cmd{electronic\_base\_plate} & 1 & carries the electronics \\
+    \cmd{intermediate\_plate}    & 1 & encloses the battery and carries the circuit board \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Key mechanical parameters.}
+  \label{tab:mech_params}
+  \begin{tabular}{ll}
+    \toprule
+    Parameter & Value \\
+    \midrule
+    Total mass of the cube                         & \SI{1036}{g} \\
+    Mass of one reaction wheel incl.\ screws and nuts & \SI{76.4}{g} \\
+    Mass of the battery                            & approx.\ \SI{80}{g} \\
+    PLA used for all printed parts                 & \SI{283}{g} \\
+    Total print time                               & approx.\ \SI{14}{h} \\
+    Edge length of the cube                        & \SI{157}{mm} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Design for 3D printing}
+
+All parts were designed to be printable without or with very few supports. Overhangs are kept at
+printable angles, and horizontal holes and nut pockets use teardrop or pointed shapes, so that the
+upper side of the opening is built as a self-supporting overhang instead of a flat bridge.
+\Cref{fig:print_optimization} shows two examples.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.42\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{print_optimization_example_1.jpg}
+    \caption{Nut pocket with a pointed roof, printable without supports.}
+    \label{fig:print_opt_1}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.42\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{print_optimization_example_2.jpg}
+    \caption{Detail of a printed frame part with a screw hole and cut-out.}
+    \label{fig:print_opt_2}
+  \end{subfigure}
+  \caption{Examples of geometry optimised for FDM printing.}
+  \label{fig:print_optimization}
+\end{figure}
+
+\section{Reaction wheels}
+\label{sec:wheels}
+
+Each reaction wheel (\cref{fig:wheel}) is a printed ring with four spokes. Six M6 screws, each with
+two M6 nuts, are mounted on the rim. They add mass at the largest possible radius and thereby
+increase the moment of inertia of the wheel without making the wheel much heavier. One complete
+wheel including all screws and nuts weighs \SI{76.4}{g}. The hub is clamped onto the motor shaft
+with two screws.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\textwidth]{reaction_wheel_with_bolts.jpg}
+  \caption{Reaction wheel with the M6 screws and nuts on its rim and the two clamping screws at the
+    hub.}
+  \label{fig:wheel}
+\end{figure}
+
+The wheel must sit exactly perpendicular on the motor shaft. A wheel that wobbles causes
+vibrations, which disturb the IMU, and it can rub against the frame. During development, a wheel
+that rubbed against the frame because of a loose screw produced cracking noises and shocks that
+shortened the balancing time considerably (\cref{sec:history}).
+
+\section{Sensor mount and sensor position}
+
+The IMU is mounted as close as possible to the geometric centre of the cube, with each of its
+three axes aligned with the axis of one motor. This is why the motors are called X, Y and Z: motor X
+rotates the cube about the sensor's X axis, and so on. Placing the sensor near the centre keeps the
+accelerations it measures during rotations small.
+
+The sensor mount (\cref{fig:sensor_mount}) was created with the generative design function of
+Fusion~360. Despite its organic shape, it can be printed with remarkably little support material.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.36\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{mpu_with_holder.jpg}
+    \caption{Printed sensor mount with the IMU board.}
+    \label{fig:mpu_holder}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.56\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{sensor_position_cad.png}
+    \caption{Section view of the CAD model showing the sensor position.}
+    \label{fig:sensor_cad}
+  \end{subfigure}
+  \caption{Sensor mount and position of the IMU inside the cube.}
+  \label{fig:sensor_mount}
+\end{figure}
+
+\section{Battery compartment}
+
+The battery sits in a compartment that is closed by the intermediate plate. The circuit board is
+screwed on top of this plate with some clearance, so that the cables underneath the board are not
+crushed. The compartment is padded with cardboard and folded paper. The padding
+fixes the battery in place and absorbs some of the shock when the cube falls over. The
+accelerations during a normal fall are usually not high enough to damage the battery, but
+securing a LiPo battery against shocks is good practice.

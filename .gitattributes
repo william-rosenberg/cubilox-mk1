@@ -1,0 +1,8 @@
+# Normalise line endings of text files
+* text=auto
+
+# Binary files
+*.pdf binary
+*.png binary
+*.jpg binary
+*.gif binary

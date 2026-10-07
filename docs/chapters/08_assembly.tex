@@ -1,0 +1,52 @@
+\chapter{Assembly}
+\label{ch:assembly}
+
+The 3D files are published separately on MakerWorld (\href{https://makerworld.com/de/models/3406349-cubilox-mk1-self-balancing-cube-on-its-corner\#profileId-3879241}{Cubilox Mk1 on MakerWorld}). All parts
+listed in \cref{tab:printed_parts} are printed in PLA; the author used a Bambu Lab A1 with the
+default settings of Bambu Studio. The complete bill of materials is given in \cref{app:bom}.
+
+\section{Reaction wheels and motors}
+
+\begin{enumerate}
+  \item Mount all M6 screws and nuts on the rims of the three flywheels first
+        (\cref{fig:wheel}).
+  \item Push each flywheel onto its motor shaft. The fit is very tight; on the original cube, the
+        bore of the flywheel was widened slightly with drill bits until it fitted exactly.
+  \item Clamp the flywheel to the shaft with the two hub screws. Make sure that the wheel sits
+        exactly perpendicular on the shaft and does not wobble. A wobbling wheel causes
+        vibrations and can rub against the frame.
+  \item Screw the motor mounts to the motors with M4 screws and nuts.
+\end{enumerate}
+
+\section{Frame}
+
+\begin{enumerate}
+  \item Press the M3 nuts into the corner mounts. They should be a light press fit, so that they
+        do not fall out during assembly.
+  \item First assemble the three motor sides completely, then join the three sides using the
+        corner mounts. This order makes the assembly much easier.
+  \item If an M3 nut falls out, small tweezers help to put it back; with the fingers it is hard to
+        reach.
+\end{enumerate}
+
+\section{Electronics}
+
+\begin{enumerate}
+  \item Solder the board according to the schematic (\cref{fig:schematic}) and
+        \cref{tab:pins,tab:motor_pins}. Check all connections with a multimeter before connecting
+        the battery for the first time.
+  \item Extend the motor cables (\cref{fig:wiring_extension}) and connect them to the 8-pin
+        headers, keeping the pin order.
+  \item Mount the IMU on the sensor mount so that its X, Y and Z axes are parallel to the axes of
+        motors X, Y and Z (\cref{fig:sensor_mount}).
+  \item Pad the battery compartment (for example with cardboard and folded paper) so that the
+        battery sits firmly and is protected against shocks.
+  \item Insulate all battery contacts (see the safety note in \cref{ch:electronics}).
+\end{enumerate}
+
+\section{Commissioning}
+
+Flash the firmware, run \cmd{motortest} and check the motor and encoder signs, then calibrate the
+edge and the vertex as described in \cref{ch:getting_started}. If a motor of a rebuilt cube is
+mounted in the opposite direction, the signs in \cmd{config.h} must be adapted to the values
+recommended by \cmd{motortest}.

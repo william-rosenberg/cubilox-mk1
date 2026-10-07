@@ -1,0 +1,58 @@
+\chapter{Bill of Materials}
+\label[appendix]{app:bom}
+
+The same list is available as \cmd{BOM.csv} in the root of the repository.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.30\textwidth}c>{\raggedright\arraybackslash}p{0.52\textwidth}}
+  \caption{Bill of materials.}
+  \label{tab:bom}\\
+  \toprule
+  Item & Qty. & Specification / notes \\
+  \midrule
+  \endfirsthead
+  \toprule
+  Item & Qty. & Specification / notes \\
+  \midrule
+  \endhead
+  \multicolumn{3}{l}{\textbf{Electronics}} \\
+  ESP32 development board & 1 & HW-394, ESP32-32D module, 30 pins, USB-C \\
+  IMU breakout board & 1 & MPU-6500 (labelled MPU-9250/6500/9255) \\
+  Brushless motor Nidec 24H & 3 & 8-pin connector version (integrated driver and encoder) \\
+  LiPo battery & 1 & 3S, \SI{11.1}{V}, \SI{1000}{mAh}, approx.\ \qtyproduct{63 x 30 x 24}{mm},
+    approx.\ \SI{80}{g} \\
+  XT30 connector & 1 & battery connector \\
+  DC-DC buck converter (mini) & 1 & input \SIrange{5}{30}{V}, output \SI{5}{V} \\
+  Prototype PCB & 1 & \qtyproduct{60 x 80}{mm} \\
+  Electrolytic capacitor & 1 & \SI{1000}{\micro F}, bulk capacitor at the battery input \\
+  Electrolytic capacitor & 3 & \SI{100}{\micro F}, one per motor supply \\
+  Ceramic capacitor & 1 & \SI{100}{nF}, at the battery voltage divider \\
+  Resistor & 1 & \SI{33}{k\ohm} (built as \SI{20}{k\ohm} + \SI{10}{k\ohm} + \SI{3.3}{k\ohm}
+    in series) \\
+  Resistor & 1 & \SI{10}{k\ohm} \\
+  Resistor & 1 & \SI{1}{k\ohm}, base resistor of the buzzer transistor \\
+  NPN transistor 2N2222 & 1 & low-side switch for the buzzer \\
+  Active buzzer & 1 & \SI{5}{V} \\
+  Pin headers & as req. & \SI{2.54}{mm}; 3 $\times$ 8-pin (motors), 1 $\times$ 4-pin (IMU),
+    battery connector \\
+  Jumper wires & as req. & \SI{2.54}{mm} female, motor cable extensions \\
+  Heat shrink tubing & as req. & insulation of the soldered extensions \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Hardware}} \\
+  M6 nut & 36 & additional rim mass of the reaction wheels \\
+  M6 $\times$ \SI{10}{mm} screw & 18 & additional rim mass of the reaction wheels \\
+  M4 nut & 6 & motor mounts \\
+  M4 $\times$ \SI{10}{mm} screw & 6 & motor mounts \\
+  M3 nut & 53 & general assembly (frame and mounts) \\
+  M3 $\times$ \SI{10}{mm} screw & 53 & general assembly (frame and mounts) \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{3D-printed parts (PLA)}} \\
+  \cmd{motor\_mount} & 6 & \\
+  \cmd{flywheel} & 3 & \\
+  \cmd{motor\_wall} & 3 & \\
+  \cmd{side\_wall} & 3 & \\
+  \cmd{corner\_mount} & 8 & \\
+  \cmd{sensor\_mount} & 1 & \\
+  \cmd{electronic\_base\_plate} & 1 & \\
+  \cmd{intermediate\_plate} & 1 & encloses the battery, carries the circuit board \\
+  \bottomrule
+\end{longtable}

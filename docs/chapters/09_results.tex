@@ -1,0 +1,119 @@
+\chapter{Results}
+\label{ch:results}
+
+\section{Edge balancing}
+
+The edge balancing works reliably. With the automatic trim, the wheel oscillates around zero speed
+and the trim settles within about \SI{\pm 0.1}{\degree}. The cube also recovers from gentle pushes,
+as shown in the animation in the repository (\cref{fig:edge_results}).
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.38\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{edge_balance_front_view.jpg}
+    \caption{Front view of the cube balancing on its edge.}
+    \label{fig:edge_front}
+  \end{subfigure}\hspace{0.06\textwidth}
+  \begin{subfigure}[b]{0.38\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{edge_balance_push_resistance_frame.png}
+    \caption{Frame of the animation in which the cube is pushed while balancing on its edge.}
+    \label{fig:edge_push}
+  \end{subfigure}
+  \caption{Balancing on the edge.}
+  \label{fig:edge_results}
+\end{figure}
+
+\section{Vertex balancing}
+
+After the improvements described in \cref{sec:history}, and in particular after calibrating the
+vertex by hand, the cube balances on its vertex for several minutes in a row. Only a small residual
+oscillation remains, which is attributed to the limited motor power and to a calibration that is
+not perfect. \Cref{fig:vertex_results} shows frames of the two animations in the repository.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[b]{0.38\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{vertical_balance_loop_frame.png}
+    \caption{Frame of the balancing loop animation.}
+    \label{fig:vertex_loop}
+  \end{subfigure}\hspace{0.06\textwidth}
+  \begin{subfigure}[b]{0.38\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{vertical_balance_around_view_frame.png}
+    \caption{Frame of the animation with a view around the cube.}
+    \label{fig:vertex_around}
+  \end{subfigure}
+  \caption{Balancing on the vertex.}
+  \label{fig:vertex_results}
+\end{figure}
+
+\section{Motor test}
+
+The motor test (\cmd{motortest}, PWM 150 for \SI{200}{ms}) gave encoder counts of 379, 377 and 380
+for the motors X, Y and Z, confirming that the three motors deliver the same power, and the
+measured gyroscope reactions confirmed the motor signs $(+1, -1, -1)$ and the encoder signs
+$(+1, +1, +1)$.
+
+\section{Development history and lessons learned}
+\label{sec:history}
+
+The vertex balancing did not work at the first attempt. \Cref{tab:history} summarises the most
+important problems, their causes and the resulting balancing times on the vertex. Several of these
+lessons apply to any balancing robot.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{0.27\textwidth}>{\raggedright\arraybackslash}p{0.45\textwidth}>{\raggedright\arraybackslash}p{0.18\textwidth}}
+  \caption{Development history of the vertex balancing.}
+  \label{tab:history}\\
+  \toprule
+  Problem & Cause and solution & Vertex time \\
+  \midrule
+  \endfirsthead
+  \toprule
+  Problem & Cause and solution & Vertex time \\
+  \midrule
+  \endhead
+  Vertex filter drifted to the wrong sign after about \SI{0.3}{s} &
+    The tilt error was computed as $\vect{r}\times\vect{n}$ instead of $\vect{n}\times\vect{r}$,
+    so gyroscope and accelerometer had opposite signs. Additionally, the filter used a wrong time
+    step and included the yaw rotation. All three were fixed. & -- \\
+  Cube slowly tipped away &
+    The encoder signs of motors Y and Z were wrong, which cancelled half of the restoring
+    action. Fixed with the motor test. & 1--2\,s \\
+  Slow rocking with a period of about \SI{1.3}{s} &
+    Gains changed from 70\,/\,8\,/\,0.35 to 90\,/\,11\,/\,0.30. & -- \\
+  Motor Z stopped working in two runs &
+    Loose contact (encoder showed zero despite a large command). & -- \\
+  Run stopped by the shock detection although the cube was upright &
+    Fast reversals of the wheels produced short accelerations above \SI{2}{g}; stopping and braking
+    then threw the cube over. Now only a shock lasting longer than \SI{150}{ms} stops the run;
+    \cmd{vk2} reduced to 9.5. & -- \\
+  Cracking noises &
+    A wheel rubbed against the frame because of a loose screw. & 7--8\,s \\
+  Runs ended with the wheels saturated, cube visibly rotating about its vertical axis &
+    The wheel momentum about the vertical axis was fed back like the tilt momentum (positive
+    feedback). The yaw axis is now controlled separately (\cref{sec:yaw_physics}). & -- \\
+  All run times suddenly much shorter (about \SI{2}{s}) &
+    Bluetooth output blocked the control loop. Every log line is now sent as one packet, after the
+    motor commands. Afterwards, the measured control gap was a constant \SI{6}{ms}. & 7--10\,s \\
+  Results varied strongly between sessions &
+    The vertex pose had been calibrated in a fixture that held the cube geometrically straight,
+    but the centre of mass was slightly off the geometric axis. Calibrating by hand, at the real
+    balance point, solved the problem. & several minutes \\
+  \bottomrule
+\end{longtable}
+
+The main lessons are:
+\begin{itemize}
+  \item \textbf{Signs and conventions first.} Most early failures were sign errors. A motor test
+        that measures the reaction of the cube to each motor saves a lot of time.
+  \item \textbf{The balance point is defined by the centre of mass, not by the geometry.}
+  \item \textbf{Look for positive feedback} when a quantity grows exponentially.
+  \item \textbf{Logging must never block the control loop.}
+  \item \textbf{Change only one thing at a time.} In one test series, two changes were made at
+        once, and their effects could not be separated.
+  \item \textbf{Mechanical problems look like control problems.} A rubbing wheel or a loose
+        contact can ruin otherwise good gains.
+\end{itemize}

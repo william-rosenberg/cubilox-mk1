@@ -1,0 +1,45 @@
+# Local working files (notes, logs, helper scripts, original photos)
+_local/
+CLAUDE.md
+
+# 3D/CAD files are published on MakerWorld, not in this repository
+*.step
+*.stp
+*.stl
+*.3mf
+*.f3d
+*.f3z
+*.obj
+
+# Arduino / build output
+build/
+*.bin
+*.elf
+*.hex
+*.map
+
+# LaTeX auxiliary files (the final PDF in docs/ is tracked)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.xdv
+
+# Editors and operating systems
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+__pycache__/

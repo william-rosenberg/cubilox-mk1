@@ -1,0 +1,75 @@
+\chapter{Tuning Guide}
+\label{ch:tuning}
+
+The gains can be changed at runtime over Bluetooth (for example \cmd{vk2 9}) and stored with
+\cmd{save}. \Cref{tab:gains} lists all gains with their default values, which are the values the
+cube balances with. The motor command is a PWM value between $-255$ and $+255$; angles are in
+degrees, rates in degrees per second and wheel speeds in encoder counts per \SI{100}{ms}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Tunable gains and their default values.}
+  \label{tab:gains}
+  \begin{tabularx}{\textwidth}{llX}
+    \toprule
+    Command & Default & Meaning \\
+    \midrule
+    \cmd{ek1}   & 70    & edge: angle gain (PWM per degree) \\
+    \cmd{ek2}   & 8     & edge: rate gain (PWM per degree/s) \\
+    \cmd{ek3}   & 0.35  & edge: wheel speed gain \\
+    \cmd{trim}  & 0.001 & edge: rate of the automatic trim (0 = off) \\
+    \cmd{vk1}   & 90    & vertex: tilt angle gain \\
+    \cmd{vk2}   & 9.5   & vertex: tilt rate gain \\
+    \cmd{vk3}   & 0.30  & vertex: wheel momentum gain (tilt part) \\
+    \cmd{vyd}   & 9.5   & vertex: damping of the rotation about the vertical axis \\
+    \cmd{vyw}   & 0.15  & vertex: reduction of the wheel momentum about the vertical axis \\
+    \cmd{vtrim} & 0     & vertex: rate of the automatic trim (0 = off) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Effect of the gains}
+
+\begin{description}
+  \item[Angle gain (\cmd{ek1}, \cmd{vk1})] determines how strongly the cube is pushed back towards
+    the balance point. Too low: the cube reacts sluggishly, leans far and falls slowly to one side.
+    Too high: it overreacts, oscillates quickly and the motors reach their limit.
+  \item[Rate gain (\cmd{ek2}, \cmd{vk2})] damps the motion. Too low: the cube overshoots and
+    oscillates. Too high: the motors react to sensor noise and switch rapidly back and forth; this
+    is audible as a buzzing and produces short shocks. On the vertex, \cmd{vk2 11} caused such
+    shocks, \cmd{vk2 9.5} did not.
+  \item[Wheel speed gain (\cmd{ek3}, \cmd{vk3})] prevents the wheels from running away. Too low:
+    the wheels slowly spin up until the motors saturate and the cube falls after a few seconds.
+    Too high: a slow oscillation of the whole cube. During development, the vertex rocked slowly
+    with a period of about \SI{1.3}{s} at 70\,/\,8\,/\,0.35; raising the angle and rate gains and
+    slightly lowering the wheel gain (90\,/\,11\,/\,0.30, later 90\,/\,9.5\,/\,0.30) stabilised it.
+  \item[Yaw damping (\cmd{vyd})] damps the rotation of the cube about its vertical axis.
+  \item[Yaw momentum gain (\cmd{vyw})] slowly reduces the momentum of the wheels about the
+    vertical axis. It \emph{must be positive}. With a negative value (\cmd{-0.3}), the yaw momentum
+    grew exponentially until the motors saturated after 7--10\,s
+    (\cref{sec:yaw_physics,sec:history}).
+  \item[Trim rates (\cmd{trim}, \cmd{vtrim})] determine how fast the automatic trim corrects the
+    balance point. The trim should be much slower than the balancing motion; a trim that is too
+    fast can interact with the controller. On the vertex, a careful calibration by hand worked
+    better than the trim, which is why \cmd{vtrim} is 0 by default.
+\end{description}
+
+\section{Recommended procedure}
+
+\begin{enumerate}
+  \item Start with a fully charged battery: the available motor power depends noticeably on the
+        battery voltage.
+  \item Calibrate first, then tune. Many problems that look like bad gains are actually a wrong
+        balance point (\cref{sec:history}).
+  \item Change only \textbf{one} gain at a time and test it several times. Changing two things at
+        once made it impossible to tell which change caused an effect.
+  \item Use \cmd{debug 1} and record the output. Check that every wheel speed (\cmd{w=}) reacts to
+        its motor command (\cmd{o=}); a wheel that stays at zero indicates a hardware problem
+        such as a loose connector.
+  \item The cause reported at the end of a run helps: \enquote{motors saturated} usually means that
+        the wheel speeds ran away (wheel speed gain, calibration or yaw gain),
+        \enquote{tilt angle too large} that the cube fell over without the motors being at their
+        limit (angle or rate gain), and \enquote{sustained shock} that the cube was hit or vibrates
+        strongly.
+  \item Store good values with \cmd{save}.
+\end{enumerate}

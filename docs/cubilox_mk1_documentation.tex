@@ -1,0 +1,121 @@
+% ============================================================
+% Cubilox Mk1 - technical documentation
+% Copyright (c) 2026 William Rosenberg, licensed under CC BY 4.0
+% Build: pdflatex, biber, pdflatex, pdflatex (or: latexmk -pdf cubilox_mk1_documentation.tex)
+% ============================================================
+\pdfminorversion=7
+\documentclass[11pt,a4paper,oneside]{report}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[english]{babel}
+\usepackage{microtype}
+\usepackage[a4paper,margin=2.5cm,headheight=14pt]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{bm}
+\usepackage{siunitx}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{pdflscape}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{fancyhdr}
+\usepackage{csquotes}
+\usepackage[backend=biber,style=ieee]{biblatex}
+\usepackage[hidelinks,hypertexnames=false]{hyperref}
+\usepackage[nameinlink,capitalise]{cleveref}
+
+\addbibresource{references.bib}
+\graphicspath{{figures/}{../hardware/electronics/}}
+
+\sisetup{per-mode=symbol}
+\setlength{\emergencystretch}{2em}
+
+% Visible marker for missing information
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+\newcommand{\cmd}[1]{\texttt{#1}}
+\newcommand{\vect}[1]{\bm{#1}}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{NavyBlue}\bfseries,
+  commentstyle=\color{ForestGreen},
+  stringstyle=\color{BrickRed},
+  numbers=left, numberstyle=\tiny\color{gray},
+  frame=single, rulecolor=\color{gray!50},
+  breaklines=true, columns=fullflexible,
+  language=C++, showstringspaces=false,
+  captionpos=b
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Cubilox Mk1}
+\fancyhead[R]{\small\nouppercase{\leftmark}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+\hypersetup{
+  pdftitle={Cubilox Mk1 - A Self-Balancing Reaction Wheel Cube},
+  pdfauthor={William Rosenberg},
+  pdfsubject={Technical documentation}
+}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{1.5cm}
+  {\Huge\bfseries Cubilox Mk1\par}
+  \vspace{0.5cm}
+  {\Large A Self-Balancing Reaction Wheel Cube\par}
+  \vspace{1.2cm}
+  \includegraphics[width=0.6\textwidth]{cubilox_mk1_render.png}\par
+  \vspace{1.2cm}
+  {\large Technical Documentation\par}
+  \vspace{0.4cm}
+  {\large William Rosenberg\par}
+  \vspace{0.4cm}
+  {\large 2026\par}
+  \vfill
+  {\small This document is licensed under the Creative Commons Attribution 4.0
+  International License (CC BY 4.0).\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\input{chapters/00_abstract}
+\tableofcontents
+\listoffigures
+\listoftables
+\cleardoublepage
+\pagenumbering{arabic}
+
+\input{chapters/01_introduction}
+\input{chapters/02_working_principle}
+\input{chapters/03_mechanical_design}
+\input{chapters/04_electronics}
+\input{chapters/05_firmware_and_control}
+\input{chapters/06_getting_started}
+\input{chapters/07_tuning}
+\input{chapters/08_assembly}
+\input{chapters/09_results}
+\input{chapters/10_limitations}
+\input{chapters/11_outlook}
+
+\printbibliography[heading=bibintoc,title={References}]
+
+\appendix
+\input{chapters/a_bom}
+\input{chapters/b_third_party}
+
+\end{document}
